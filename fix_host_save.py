@@ -6,7 +6,11 @@ import zlib
 
 from palworld_save_tools.gvas import GvasFile
 from palworld_save_tools.palsav import compress_gvas_to_sav, decompress_sav_to_gvas
-from palworld_save_tools.paltypes import PALWORLD_CUSTOM_PROPERTIES, PALWORLD_TYPE_HINTS
+from palworld_save_tools.paltypes import (
+    DISABLED_PROPERTIES,
+    PALWORLD_CUSTOM_PROPERTIES,
+    PALWORLD_TYPE_HINTS,
+)
 
 def main():
     if len(sys.argv) < 5:
@@ -124,11 +128,21 @@ of your save folder before continuing. Press enter if you would like to continue
 
 def sav_to_json(filepath):
     print(f'Converting {filepath} to JSON...', end='', flush=True)
+    
+    custom_properties_keys = ",".join(set(PALWORLD_CUSTOM_PROPERTIES.keys()) - DISABLED_PROPERTIES)
+    custom_properties = {}
+    if len(custom_properties_keys) > 0 and custom_properties_keys[0] == "all":
+        custom_properties = PALWORLD_CUSTOM_PROPERTIES
+    else:
+        for prop in PALWORLD_CUSTOM_PROPERTIES:
+            if prop in custom_properties_keys:
+                custom_properties[prop] = PALWORLD_CUSTOM_PROPERTIES[prop]
+    
     with open(filepath, 'rb') as f:
         data = f.read()
         raw_gvas, _ = decompress_sav_to_gvas(data)
     gvas_file = GvasFile.read(
-        raw_gvas, PALWORLD_TYPE_HINTS, PALWORLD_CUSTOM_PROPERTIES, allow_nan=True
+        raw_gvas, PALWORLD_TYPE_HINTS, custom_properties, allow_nan=True
     )
     json_data = gvas_file.dump()
     print('Done!', flush=True)
